@@ -5,7 +5,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserEntity } from './infrastructure/database/entities/user.entity';
 import { TeamEntity } from './infrastructure/database/entities/team.entity';
 import { PlayerEntity } from './infrastructure/database/entities/player.entity';
-import { CacheModule } from './modules/cache/cache.module';   
+import { CacheModule } from './modules/cache/cache.module';
+import { TeamModule } from './modules/team/team.module';
 
 @Module({
   imports: [
@@ -20,7 +21,8 @@ import { CacheModule } from './modules/cache/cache.module';
       synchronize: true
     }),
     AuthModule,
-    CacheModule
+    CacheModule,
+    TeamModule
   ]
 })
 export class AppModule {}

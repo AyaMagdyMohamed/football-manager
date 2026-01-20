@@ -31,7 +31,7 @@ export function startTeamWorker(dataSource: DataSource) {
         for (let i = 0; i < count; i++) {
           players.push(
             playerRepo.create({
-              name: `${pos}_${i + 1}`,
+              name: `${pos}_${i + 1}_${randomName()}`,
               position: pos,
               team,
             }),
@@ -52,4 +52,14 @@ export function startTeamWorker(dataSource: DataSource) {
       connection: { host: 'localhost', port: 6379 },
     },
   );
+}
+
+
+const firstNames = ['Alex', 'John', 'Ali', 'Omar', 'Leo'];
+const lastNames = ['Smith', 'Khan', 'Silva', 'Garcia', 'Rossi'];
+
+function randomName() {
+  return `${firstNames[Math.floor(Math.random()*firstNames.length)]} ${
+    lastNames[Math.floor(Math.random()*lastNames.length)]
+  }`;
 }
