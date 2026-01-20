@@ -7,6 +7,7 @@ import { TeamEntity } from './infrastructure/database/entities/team.entity';
 import { PlayerEntity } from './infrastructure/database/entities/player.entity';
 import { CacheModule } from './modules/cache/cache.module';
 import { TeamModule } from './modules/team/team.module';
+import { TransfersModule } from './modules/transfers/transfers.module';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { TeamModule } from './modules/team/team.module';
     }),
     AuthModule,
     CacheModule,
-    TeamModule
+    TeamModule,
+    TransfersModule,
   ]
 })
 export class AppModule {}
