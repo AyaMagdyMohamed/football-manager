@@ -34,6 +34,7 @@ export function startTeamWorker(dataSource: DataSource) {
               name: `${pos}_${i + 1}_${randomName()}`,
               position: pos,
               team,
+              teamId: team.id,
             }),
           );
         }

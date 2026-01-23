@@ -21,4 +21,7 @@ export class PlayerEntity {
 
   @ManyToOne(() => TeamEntity, team => team.players)
   team: TeamEntity;
+
+  @Column()
+  teamId: number;
 }

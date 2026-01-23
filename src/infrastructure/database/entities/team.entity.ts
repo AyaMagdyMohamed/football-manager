@@ -20,4 +20,6 @@ export class TeamEntity {
 
   @OneToMany(() => PlayerEntity, p => p.team)
   players: PlayerEntity[];
+
+
 }

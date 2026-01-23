@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { PlayerEntity } from '../../infrastructure/database/entities/player.entity';
 import { TeamEntity } from '../../infrastructure/database/entities/team.entity';
 import { Inject } from '@nestjs/common';
@@ -17,8 +17,12 @@ import {
 @Injectable()
 export class TransfersService {
   constructor(
-    @InjectRepository(PlayerEntity)
-    private readonly playerRepo: Repository<PlayerEntity>,
+      @InjectRepository(PlayerEntity)
+      private readonly playerRepo: Repository<PlayerEntity>,
+      @InjectRepository(TeamEntity)
+      private readonly teamRepo: Repository<TeamEntity>,
+
+      private readonly dataSource: DataSource,
   ) {}
 
   async sellPlayer(userId: number, playerId: number, askingPrice: number) {
@@ -72,4 +76,134 @@ export class TransfersService {
       askingPrice,
     };
   }
+
+async buyPlayer(userId: number, playerId: number) {
+  return this.dataSource.transaction(async manager => {
+    const playerRepo = manager.getRepository(PlayerEntity);
+    const teamRepo = manager.getRepository(TeamEntity);
+
+    // 1) Lock player row ONLY
+    const player = await playerRepo.findOne({
+      where: { id: playerId },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (!player) throw new NotFoundException('Player not found');
+    if (!player.isForSale) throw new BadRequestException('Player not for sale');
+
+    // 2) Lock seller team (NO relations)
+    const sellerTeam = await teamRepo.findOne({
+      where: { id: player.teamId },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (!sellerTeam) throw new NotFoundException('Seller team not found');
+
+    // 3) Lock buyer team (NO relations)
+    const buyerTeam = await teamRepo.findOne({
+      where: { user: { id: userId } },
+      lock: { mode: 'pessimistic_write' },
+    });
+
+    if (!buyerTeam) throw new NotFoundException('Buyer team not found');
+
+    if (buyerTeam.id === sellerTeam.id) {
+      throw new BadRequestException('Cannot buy your own player');
+    }
+
+    // 4) Count players separately (safe)
+    const sellerCount = await playerRepo.count({
+      where: { teamId: sellerTeam.id },
+    });
+
+    const buyerCount = await playerRepo.count({
+      where: { teamId: buyerTeam.id },
+    });
+
+    // 5) Team size rules
+    if (buyerCount + 1 > 25) {
+      throw new BadRequestException('Buyer team already has 25 players');
+    }
+
+    if (sellerCount - 1 < 15) {
+      throw new BadRequestException('Seller team would drop below 15 players');
+    }
+
+    // 6) Price (95%)
+    const price = Math.floor(player.askingPrice * 0.95);
+
+    if (buyerTeam.budget < price) {
+      throw new BadRequestException('Not enough budget');
+    }
+
+    // 7) Transfer money
+    buyerTeam.budget -= price;
+    sellerTeam.budget += price;
+
+    // 8) Transfer ownership
+    player.teamId = buyerTeam.id;
+    player.isForSale = false;
+    player.askingPrice = null;
+
+    // 9) Save
+    await teamRepo.save([buyerTeam, sellerTeam]);
+    await playerRepo.save(player);
+    return {
+      success: true,
+      paid: price,
+      playerId: player.id,
+    };
+  });
+}
+
+async getMarketPlayers(filters: any) {
+  const qb = this.playerRepo
+    .createQueryBuilder('player')
+    .innerJoinAndSelect('player.team', 'team')
+    .where('player.isForSale = true');
+
+  if (filters.playerName) {
+    qb.andWhere('LOWER(player.name) LIKE LOWER(:playerName)', {
+      playerName: `%${filters.playerName}%`,
+    });
+  }
+
+  if (filters.teamName) {
+    qb.andWhere('LOWER(team.id::text) LIKE LOWER(:teamName)', {
+      teamName: `%${filters.teamName}%`,
+    });
+  }
+
+  if (filters.position) {
+    qb.andWhere('player.position = :position', {
+      position: filters.position,
+    });
+  }
+
+  if (filters.minPrice) {
+    qb.andWhere('player.askingPrice >= :minPrice', {
+      minPrice: filters.minPrice,
+    });
+  }
+
+  if (filters.maxPrice) {
+    qb.andWhere('player.askingPrice <= :maxPrice', {
+      maxPrice: filters.maxPrice,
+    });
+  }
+
+  if (filters.minPrice && filters.maxPrice && filters.minPrice > filters.maxPrice) {
+  throw new BadRequestException('minPrice cannot be greater than maxPrice');
+}
+
+  const players = await qb.getMany();
+
+  return players.map(p => ({
+    playerId: p.id,
+    name: p.name,
+    position: p.position,
+    askingPrice: p.askingPrice,
+    teamId: p.team.id,
+  }));
+}
 }
