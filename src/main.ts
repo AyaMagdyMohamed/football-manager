@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { startTeamWorker } from './modules/background-jobs/team.worker';
 
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

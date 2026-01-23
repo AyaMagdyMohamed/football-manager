@@ -8,18 +8,18 @@ import { PlayerEntity } from './infrastructure/database/entities/player.entity';
 import { CacheModule } from './modules/cache/cache.module';
 import { TeamModule } from './modules/team/team.module';
 import { TransfersModule } from './modules/transfers/transfers.module';
+import { databaseConfig } from './config/database.config';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: 5432,
-      username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'postgres',
-      database: process.env.DB_NAME || 'fantasy',
-      entities: [UserEntity, TeamEntity, PlayerEntity],
-      synchronize: true
+     ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    TypeOrmModule.forRootAsync({
+      useFactory: databaseConfig,
     }),
     AuthModule,
     CacheModule,

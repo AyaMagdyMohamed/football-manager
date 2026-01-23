@@ -8,23 +8,21 @@ This repository provides the project structure and Dockerized setup for the Foot
 - Docker / Docker Compose
 
 ## Setup (Docker)
-1. Copy environment file:
-   ```bash
-   copy .env.example .env
-   ```
-2. Build and run:
+
+
+1. Build and run:
    ```bash
    docker compose up --build
    ```
-3. API will be available at: `http://localhost:3000`
+2. API will be available at: `http://localhost:3000`
 
 ## Setup (Local)
 1. Install dependencies:
    ```bash
    npm install
    ```
-2. Set env variables (use `.env.example` as reference).
-3. Start API:
+
+2. Start API:
    ```bash
    npm run start:dev
    ```
