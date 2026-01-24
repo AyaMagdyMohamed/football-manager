@@ -14,15 +14,23 @@ import {
   MAX_PLAYER_PRICE
 } from './constants';
 
+import { CacheService } from '../cache/interfaces/cache.interface';
+import { Logger } from '@nestjs/common';
+
 @Injectable()
 export class TransfersService {
+  private readonly logger = new Logger(TransfersService.name);
   constructor(
       @InjectRepository(PlayerEntity)
       private readonly playerRepo: Repository<PlayerEntity>,
       @InjectRepository(TeamEntity)
       private readonly teamRepo: Repository<TeamEntity>,
 
-      private readonly dataSource: DataSource,
+     @Inject('CacheService')
+     private readonly cache: CacheService,
+     private readonly dataSource: DataSource,
+     
+      
   ) {}
 
   async sellPlayer(userId: number, playerId: number, askingPrice: number) {
@@ -68,6 +76,7 @@ export class TransfersService {
     player.askingPrice = askingPrice;
 
     await this.playerRepo.save(player);
+    await this.cache.del('transfer_market'); // Invalidate cache
 
     return {
       success: true,
@@ -148,6 +157,9 @@ async buyPlayer(userId: number, playerId: number) {
     // 9) Save
     await teamRepo.save([buyerTeam, sellerTeam]);
     await playerRepo.save(player);
+
+   await this.cache.del('transfer_market'); // Invalidate cache
+
     return {
       success: true,
       paid: price,
@@ -186,24 +198,48 @@ async getMarketPlayers(filters: any) {
     });
   }
 
-  if (filters.maxPrice) {
-    qb.andWhere('player.askingPrice <= :maxPrice', {
-      maxPrice: filters.maxPrice,
-    });
-  }
+    if (filters.maxPrice) {
+      qb.andWhere('player.askingPrice <= :maxPrice', {
+        maxPrice: filters.maxPrice,
+      });
+    }
 
   if (filters.minPrice && filters.maxPrice && filters.minPrice > filters.maxPrice) {
-  throw new BadRequestException('minPrice cannot be greater than maxPrice');
-}
+      throw new BadRequestException('minPrice cannot be greater than maxPrice');
+  }
+
+  const cached = await this.cache.get('transfer_market');
+  console.log('Cached transfer market:', cached);
+  if (cached){
+    this.logger.debug({
+      event: 'transfer_market_fetch',
+      source: 'cache',  
+      result: cached,
+      modules: 'TransfersService',
+    });
+    return cached;
+  }
 
   const players = await qb.getMany();
+  console.log('Fetched players from DB:', players);
+  this.logger.debug({
+    event: 'transfer_market_fetch',
+    source: 'database',
+    resultCount: players.length,
+    modules: 'TransfersService',
+  });
+  const result = players.map(p => ({
+      playerId: p.id,
+      name: p.name,
+      position: p.position,
+      askingPrice: p.askingPrice,
+      teamId: p.team.id,
+    }));
 
-  return players.map(p => ({
-    playerId: p.id,
-    name: p.name,
-    position: p.position,
-    askingPrice: p.askingPrice,
-    teamId: p.team.id,
-  }));
+  await this.cache.set('transfer_market', result, 60);
+
+  return result;
 }
+
 }
+
