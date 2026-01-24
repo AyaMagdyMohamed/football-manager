@@ -181,7 +181,7 @@ async getMarketPlayers(filters: any) {
   }
 
   if (filters.teamName) {
-    qb.andWhere('LOWER(team.id::text) LIKE LOWER(:teamName)', {
+    qb.andWhere('LOWER(team.name::text) LIKE LOWER(:teamName)', {
       teamName: `%${filters.teamName}%`,
     });
   }

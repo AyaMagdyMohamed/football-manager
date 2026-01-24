@@ -47,7 +47,7 @@ export function startTeamWorker(dataSource: DataSource,  config: ConfigService) 
       await playerRepo.save(players);
     },
     {
-      connection: { host: 'localhost', port: 6379 },
+      connection: { host: config.get('REDIS_HOST'), port:   config.get<number>('REDIS_PORT') },
     },
   );
 }

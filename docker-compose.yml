@@ -1,8 +1,9 @@
+version: "3.9"
 
-version: '3.9'
 services:
   api:
     build: .
+    container_name: football-manager-api
     ports:
       - "3000:3000"
     depends_on:
@@ -14,9 +15,13 @@ services:
       DB_USER: postgres
       DB_PASS: postgres
       DB_NAME: fantasy
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: secret123
 
   db:
     image: postgres:15
+    container_name: football-manager-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -26,5 +31,6 @@ services:
 
   redis:
     image: redis:7
+    container_name: football-manager-redis
     ports:
       - "6379:6379"
