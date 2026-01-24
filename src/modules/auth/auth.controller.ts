@@ -1,21 +1,18 @@
 
 import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import  { AuthDto } from './dto/auth.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-class AuthDto {
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  @MinLength(6)
-  password: string;
-}
-
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private service: AuthService) {}
 
+   @ApiResponse({
+    status: 200,
+    description: 'Signup/Login successful'
+  })
   @Post('authenticate')
   authenticate(@Body() dto: AuthDto) {
     return this.service.authenticate(dto.email, dto.password);

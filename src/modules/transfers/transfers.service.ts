@@ -115,7 +115,6 @@ async buyPlayer(userId: number, playerId: number) {
     });
 
     if (!buyerTeam) throw new NotFoundException('Buyer team not found');
-
     if (buyerTeam.id === sellerTeam.id) {
       throw new BadRequestException('Cannot buy your own player');
     }
@@ -169,6 +168,7 @@ async buyPlayer(userId: number, playerId: number) {
 }
 
 async getMarketPlayers(filters: any) {
+  let disableCache = false;  
   const qb = this.playerRepo
     .createQueryBuilder('player')
     .innerJoinAndSelect('player.team', 'team')
@@ -187,8 +187,8 @@ async getMarketPlayers(filters: any) {
   }
 
   if (filters.position) {
-    qb.andWhere('player.position = :position', {
-      position: filters.position,
+    qb.andWhere('player.position LIKE (:position)', {
+      position: `%${filters.position}%`,
     });
   }
 
@@ -208,20 +208,24 @@ async getMarketPlayers(filters: any) {
       throw new BadRequestException('minPrice cannot be greater than maxPrice');
   }
 
-  const cached = await this.cache.get('transfer_market');
-  console.log('Cached transfer market:', cached);
-  if (cached){
-    this.logger.debug({
-      event: 'transfer_market_fetch',
-      source: 'cache',  
-      result: cached,
-      modules: 'TransfersService',
-    });
-    return cached;
+  if (Object.keys(filters).length > 0) {
+    disableCache = true;
   }
+  if (!disableCache) {
+    const cached = await this.cache.get('transfer_market');
+    if (cached){
+      this.logger.debug({
+        event: 'transfer_market_fetch',
+        source: 'cache',  
+        result: cached,
+        modules: 'TransfersService',
+      });
+      return cached;
+    }
+  }
+  
 
   const players = await qb.getMany();
-  console.log('Fetched players from DB:', players);
   this.logger.debug({
     event: 'transfer_market_fetch',
     source: 'database',
@@ -233,11 +237,13 @@ async getMarketPlayers(filters: any) {
       name: p.name,
       position: p.position,
       askingPrice: p.askingPrice,
-      teamId: p.team.id,
+      team: {
+        id: p.team.id,
+        name: p.team.name,
+       },
     }));
 
-  await this.cache.set('transfer_market', result, 60);
-
+  if (!disableCache) await this.cache.set('transfer_market', result, 60);
   return result;
 }
 

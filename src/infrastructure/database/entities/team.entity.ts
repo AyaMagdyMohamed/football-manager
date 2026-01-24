@@ -14,6 +14,9 @@ export class TeamEntity {
   @Column()
   status: string;
 
+  @Column()
+  name: string;
+
   @OneToOne(() => UserEntity, user => user.team)
   @JoinColumn()
   user: UserEntity;

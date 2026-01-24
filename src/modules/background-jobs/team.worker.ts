@@ -3,15 +3,13 @@ import { Worker } from 'bullmq';
 import { DataSource } from 'typeorm';
 import { TeamEntity } from '../../infrastructure/database/entities/team.entity';
 import { PlayerEntity } from '../../infrastructure/database/entities/player.entity';
+import { ConfigService } from '@nestjs/config';
 
-export function startTeamWorker(dataSource: DataSource) {
+export function startTeamWorker(dataSource: DataSource,  config: ConfigService) {
   new Worker(
-    'team-creation',
+    config.get('TEAM_QUEUE_NAME'),
     async job => {
       const { userId } = job.data;
-
-      console.log('Creating team for user', userId);
-
       const teamRepo = dataSource.getRepository(TeamEntity);
       const playerRepo = dataSource.getRepository(PlayerEntity);
 
@@ -19,6 +17,7 @@ export function startTeamWorker(dataSource: DataSource) {
       const team = teamRepo.create({
         budget: 5_000_000,
         status: 'READY',
+        name: `Team_${userId}`,
         user: { id: userId } as any,
       });
 
@@ -46,8 +45,6 @@ export function startTeamWorker(dataSource: DataSource) {
       generate('ATT', 5);
 
       await playerRepo.save(players);
-
-      console.log('Team created for user', userId);
     },
     {
       connection: { host: 'localhost', port: 6379 },
