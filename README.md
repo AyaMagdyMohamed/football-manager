@@ -96,14 +96,14 @@ Authorization: Bearer <JWT_TOKEN>
 
 ## Development Time Tracking
 
-| Day       | Tasks Completed                                                                 | Hours |
-|-----------|----------------------------------------------------------------------------------|-------|
-| Monday    | Project setup, NestJS structure, database schema design (User, Team, Player)     | 2     |
-| Tuesday   | Authentication (login/signup), JWT, TypeORM integration                           | 2     |
-| Wednesday | Transfer market APIs (sell, buy), validations, transactions                      | 2     |
-| Thursday  | Caching layer (generic cache + Redis), background jobs (BullMQ team creation)    | 2     |
-| Friday    | Swagger documentation, filters, bug fixes, Docker setup, testing & cleanup       | 3     |
-| **Total** |                                                                                  | **11**|
+| Day       | Tasks Completed                                                                                                  | Hours |
+|-----------|-------------------------------------------------------------------------------------------------------------------|-------|
+| Monday    | Project setup, NestJS structure, database schema design (User, Team, Player), authentication (login/signup), JWT, TypeORM integration | 2     |
+| Tuesday   | Transfer market APIs (sell & buy), business validations, transaction handling                                     | 2     |
+| Thursday  | Caching layer (generic cache interface + Redis), BullMQ integration for team creation                             | 2     |
+| Saturday  | Swagger documentation, transfer market filters, bug fixes, Docker setup, testing & final cleanup                 | 3     |
+| **Total** |                                                                                                                   | **11**|
+
 
 
 
